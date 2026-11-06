@@ -1,0 +1,44 @@
+/* RentHome add-on styles. These are the classes used by the code added at the bottom of app.js.
+   If you already have an additions.css, keep it and paste this at the end instead of replacing it. */
+
+/* small buttons, danger buttons, row actions */
+.btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+.btn-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; cursor: pointer; }
+.btn-danger:hover { background: #fecaca; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* number badge on the "Rent & payments" menu item */
+.nav-badge { margin-left: auto; background: #dc2626; color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 2px 7px; }
+
+/* rent due / paid banner on the tenant overview */
+.pay-banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 16px; border-radius: 14px; background: #fff7ed; border: 1px solid #fed7aa; }
+.pay-banner.done { background: #ecfdf5; border-color: #a7f3d0; }
+.pay-banner small { display: block; opacity: .75; }
+.pay-to { background: #f3f4f6; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+
+/* payment status "failed" */
+.status-pill.failed { background: #fee2e2; color: #b91c1c; }
+
+/* image link preview in the property form */
+.img-preview { margin-top: 8px; }
+.img-preview img { max-width: 100%; max-height: 180px; border-radius: 10px; display: block; }
+.img-preview.bad { color: #b91c1c; font-size: 13px; }
+
+/* property details window: all photos in a grid */
+.modal:has(.detail-gallery) { width: 96vw !important; max-width: 1100px !important; max-height: 92vh; overflow-y: auto; }
+.detail-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0; }
+.detail-gallery img { width: 100%; height: 280px; object-fit: cover; border-radius: 12px; cursor: zoom-in; background: #eee; }
+.detail-gallery img:first-child { grid-column: 1 / -1; height: 420px; }
+@media (max-width: 700px) {
+  .detail-gallery { grid-template-columns: 1fr; }
+  .detail-gallery img, .detail-gallery img:first-child { height: 240px; }
+}
+
+/* full screen photo viewer */
+.lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; }
+.lightbox img { max-width: 92vw; max-height: 88vh; object-fit: contain; border-radius: 8px; }
+.lightbox button { position: absolute; background: rgba(255,255,255,.18); color: #fff; border: 0; font-size: 32px; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; }
+.lb-close { top: 16px; right: 16px; }
+.lb-prev { left: 16px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 16px; top: 50%; transform: translateY(-50%); }
+.lb-count { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; }

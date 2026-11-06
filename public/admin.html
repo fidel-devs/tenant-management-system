@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RentHome admin</title>
+<style>
+ body{font-family:system-ui,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#1f2937}
+ .card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:14px 0}
+ .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .old{background:#f3f4f6;padding:10px;border-radius:8px}
+ .new{background:#ecfdf5;padding:10px;border-radius:8px}
+ button{padding:8px 14px;border:0;border-radius:8px;cursor:pointer;font-weight:600}
+ .ok{background:#16a34a;color:#fff}.no{background:#dc2626;color:#fff}
+ .warn{color:#b45309;font-weight:600}
+ @media(max-width:600px){.row{grid-template-columns:1fr}}
+ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px;border-bottom:1px solid #e5e7eb}input{padding:8px;border:1px solid #d1d5db;border-radius:8px}
+</style>
+</head>
+
+<body>
+<h1>Address change requests</h1>
+<p><a href="/">← Back to the site</a> (log in there first with your admin account)</p>
+<div id="list">Loading…</div>
+<h1>Users</h1>
+<p>
+  <input id="userSearch" placeholder="Search name or email">
+  <button class="ok" onclick="loadUsers()">Search</button>
+</p>
+<div id="users">Loading…</div>
+<h1>Recent activity</h1>
+<div id="activity">Loading…</div>
+
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load() {
+  const box = document.getElementById('list');
+  const r = await fetch('/api/admin/address-requests', { credentials: 'same-origin' });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { box.textContent = d.error || 'Could not load.'; return; }
+  if (!d.requests.length) { box.textContent = 'No requests waiting.'; return; }
+  box.innerHTML = d.requests.map(q => `<div class="card">
+    <strong>${esc(q.title)}</strong> <small>(house #${q.property_id}, listing ID ${esc(q.listing_uid)})</small>
+    <p>Landlord: ${esc(q.landlord_name)} · ${esc(q.landlord_phone)} · ${esc(q.landlord_email)}</p>
+    <div class="row"><div class="old"><b>Current</b><br>${esc(q.old_address)}, ${esc(q.old_town)}, ${esc(q.old_county)}</div>
+    <div class="new"><b>Requested</b><br>${esc(q.new_address)}, ${esc(q.new_town)}, ${esc(q.new_county)}</div></div>
+    <p><b>Reason and how to verify:</b> ${esc(q.note)}</p>
+    ${q.same_address_count ? `<p class="warn">⚠ ${q.same_address_count} other listing(s) already use the requested address.</p>` : ''}
+    <button class="ok" onclick="decide(${q.id},'approve')">Approve</button>
+    <button class="no" onclick="decide(${q.id},'reject')">Reject</button></div>`).join('');
+}
+
+async function decide(id, action) {
+  const admin_note = prompt(action === 'approve' ? 'Note (optional):' : 'Reason for rejecting (optional):');
+  if (admin_note === null) return;
+  const r = await fetch('/api/admin/address-requests/' + id + '/decide', { method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, admin_note }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) alert(d.error || 'Something went wrong.');
+  load();
+}load();
+
+async function loadUsers() {
+  const box = document.getElementById('users');
+  const q = document.getElementById('userSearch').value;
+  const r = await fetch('/api/admin/users?q=' + encodeURIComponent(q), { credentials: 'same-origin' });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { box.textContent = d.error || 'Could not load.'; return; }
+  if (!d.users.length) { box.textContent = 'No users found.'; return; }
+  box.innerHTML = '<table><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th></th></tr>' +
+    d.users.map(u => `<tr><td>${esc(u.full_name)}</td><td>${esc(u.email)}</td><td>${esc(u.phone)}</td><td>${esc(u.role)}</td>
+    <td><button class="no" onclick="resetPw(${Number(u.id)})">Reset password</button></td></tr>`).join('') + '</table>';
+}
+
+async function resetPw(id) {
+  if (!confirm('Set a new temporary password for this user?')) return;
+  const r = await fetch('/api/admin/users/' + id + '/reset-password', { method: 'POST', credentials: 'same-origin' });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { alert(d.error || 'Something went wrong.'); return; }
+  prompt('Temporary password for ' + d.full_name + ' (copy it now, it is shown only once):', d.temp_password);
+  loadActivity();
+}
+
+async function loadActivity() {
+  const box = document.getElementById('activity');
+  const r = await fetch('/api/admin/activity?limit=100', { credentials: 'same-origin' });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { box.textContent = d.error || 'Could not load.'; return; }
+  if (!d.activity.length) { box.textContent = 'No activity yet.'; return; }
+  box.innerHTML = '<table><tr><th>When</th><th>Who</th><th>Action</th><th>Details</th></tr>' +
+    d.activity.map(a => `<tr><td>${esc(new Date(a.created_at).toLocaleString())}</td><td>${esc(a.full_name || 'system')}</td><td>${esc(a.action)}</td><td>${esc(a.details)}</td></tr>`).join('') + '</table>';
+}loadUsers(); loadActivity();
+
+</script>
+</body>
+</html>

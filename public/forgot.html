@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forgot password - RentHome</title>
+<style>
+ body{font-family:system-ui,sans-serif;max-width:420px;margin:60px auto;padding:0 16px;color:#1f2937}
+ input,button{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #d1d5db;font-size:16px;box-sizing:border-box}
+ button{background:#16a34a;color:#fff;border:0;font-weight:600;cursor:pointer}
+</style>
+</head>
+
+<body>
+<h2>Forgot your password?</h2>
+<p>Enter your account email and we will send you a reset link.</p>
+<input id="email" type="email" placeholder="Email" autocomplete="email">
+<button onclick="send()">Send reset link</button>
+<div id="msg"></div>
+<p><a href="/">← Back to the site</a></p>
+
+<script>
+async function send() {
+  const msg = document.getElementById('msg');
+  const r = await fetch('/api/auth/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: document.getElementById('email').value }) });
+  const d = await r.json().catch(() => ({}));
+  msg.textContent = d.message || d.error || 'Something went wrong.';
+}
+</script>
+
+</body>
+</html>

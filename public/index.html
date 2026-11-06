@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b32">
+  <title>RentHome | Find a place to call home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="additions.css">
+</head>
+
+<body>
+<header class="topbar">
+  <a class="brand" href="#" data-view="home"><span class="brand-mark">R</span><span>rent<span class="brand-light">home</span><small>PROPERTY MADE SIMPLE</small></span></a>
+  <nav class="main-nav"><a href="#" class="nav-link active" data-view="home">Find a house</a><a href="#how" class="nav-link">How it works</a></nav>
+  <div class="top-actions"><button class="btn btn-quiet" id="loginOpen">Log in</button><button class="btn btn-primary" id="registerOpen">Get started <span>↗</span></button><button class="menu-toggle" id="menuToggle" aria-label="Open menu">☰</button></div>
+</header>
+
+<main>
+<section id="homeView">
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="eyebrow-dot"></span> A BETTER WAY TO RENT IN KENYA</div>
+      <h1>Find your next<br><em>place to call home.</em></h1>
+      <p>Discover homes that fit your life. Manage rent, payments and property details in one simple place.</p>
+      <div class="hero-proof"><div class="avatar-stack"><span>J</span><span>M</span><span>A</span></div><div><strong>Made for real life</strong><small>Simple for tenants. Powerful for landlords.</small></div></div>
+    </div>
+
+    <div class="hero-art">
+      <div class="hero-image"></div>
+      <div class="floating-note"><span class="note-icon">⌂</span><div><strong>Home should feel right.</strong><small>Start with a better search.</small></div></div>
+      <div class="image-tag"><span class="live-dot"></span> FIND YOUR PLACE</div>
+    </div>
+  </section>
+
+  <section class="search-wrap">
+    <form id="searchForm" class="search-panel">
+      <label class="search-field"><span class="field-icon">⌕</span><span><small>LOCATION OR KEYWORD</small><input id="searchQuery" placeholder="Town, estate or house name"></span></label>
+      <label class="search-field"><span class="field-icon">⌖</span><span><small>COUNTY</small><select id="searchCounty"><option value="">All counties</option><option>Nairobi</option><option>Kiambu</option><option>Kirinyaga</option><option>Nakuru</option><option>Kisumu</option><option>Mombasa</option><option>Uasin Gishu</option><option>Machakos</option></select></span></label>
+      <label class="search-field"><span class="field-icon">KSh</span><span><small>MAX MONTHLY RENT</small><select id="searchMax"><option value="">Any budget</option><option value="5000">Up to KSh 5,000</option><option value="10000">Up to KSh 10,000</option><option value="20000">Up to KSh 20,000</option><option value="40000">Up to KSh 40,000</option><option value="70000">Up to KSh 70,000</option></select></span></label>
+      <button class="btn btn-primary search-btn" type="submit">Search homes <span>→</span></button>
+    </form>
+  </section>
+
+  <section class="listing-section">
+    <div class="section-heading"><div><div class="eyebrow muted">YOUR NEXT CHAPTER STARTS HERE</div><h2>Homes worth <em>coming home to.</em></h2><p>Browse available rentals and connect with landlords directly.</p></div><span class="listing-count" id="listingCount">Loading homes…</span></div>
+    <div class="listing-grid" id="listingGrid"><div class="empty-state">Loading available houses…</div></div>
+  </section>
+
+<section class="how-section" id="how">
+  <div class="eyebrow muted">MADE TO BE SIMPLE</div>
+    <h2>Renting, without the runaround.</h2>div class="how-grid">
+    <article><span class="how-number">01</span>
+      <h3>Discover a home</h3>
+      <p>Search homes by location and budget, then explore the details.</p>
+    </article>
+
+    <article><span class="how-number">02</span>
+      <h3>Connect directly</h3>
+      <p>Contact the landlord and arrange a viewing before making decisions.</p>
+    </article>
+
+    <article><span class="how-number">03</span>
+      <h3>Stay organised</h3>
+      <p>Once you rent, keep rent records, receipts and maintenance requests together.</p>
+    </article>
+  </div>
+</section>
+</section>
+
+<section id="authView" class="auth-layout hidden">
+  <div class="auth-art"><div class="auth-art-content"><span class="brand-mark light-mark">R</span><h2>A little more ease.<br><em>A lot more home.</em></h2><p>One thoughtful place for your property journey.</p></div></div>
+  <div class="auth-card-wrap"><button class="back-link" id="backHome">← Back to homes</button><div class="auth-card">
+    <div class="eyebrow muted" id="authEyebrow">WELCOME TO RENTHOME</div><h1 id="authTitle">Welcome back.</h1><p id="authSubtitle">Sign in to continue to your account.</p>
+    <div id="authError" class="alert hidden"></div>
+    <form id="authForm">
+      <div id="registerFields" class="hidden"><label>Full name<input name="full_name" autocomplete="name" placeholder="Your full name"></label><label>Phone number<input name="phone" autocomplete="tel" placeholder="07XX XXX XXX"></label></div>
+      <label>Email address<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></label>
+      <a class="forgot-link" href="/forgot.html">Forgot password?</a>
+      <div id="roleField" class="hidden"><label>I want to use RentHome as<select name="role"><option value="tenant">Tenant — find and manage a home</option><option value="landlord">Landlord — advertise and manage properties</option></select></label></div>
+      <button class="btn btn-primary full-btn" id="authSubmit" type="submit">Log in <span>→</span></button>
+    </form><p class="auth-switch" id="authSwitch">New to RentHome? <button id="switchAuth">Create an account</button></p>
+  </div></div>
+</section>
+
+<section id="dashboardView" class="dashboard hidden">
+  <aside class="sidebar"><a class="brand side-brand" href="#"><span class="brand-mark">R</span><span>rent<span class="brand-light">home</span><small>PROPERTY MADE SIMPLE</small></span></a>
+    <div class="side-label">WORKSPACE</div><button class="side-link active" data-panel="overview">▦ <span>Overview</span></button><button class="side-link" data-panel="properties" id="propertiesNav">⌂ <span>My properties</span></button><button class="side-link" data-panel="tenants" id="tenantsNav">♙ <span>Tenants</span></button><button class="side-link" data-panel="payments">↗ <span>Rent & payments</span></button><button class="side-link" data-panel="maintenance" id="maintenanceNav">⚒ <span>Maintenance</span></button>
+    <div class="sidebar-bottom"><div class="help-card"><span>✦</span><strong>Need a hand?</strong><p>Keep your property records organised and up to date.</p></div><button class="side-link" id="logoutBtn">↪ <span>Log out</span></button></div>
+  </aside>
+  <div class="dashboard-main"><header class="dash-top"><div><div class="eyebrow muted" id="dashEyebrow">YOUR SPACE</div><h1 id="dashTitle">Good morning.</h1></div><div class="profile-pill"><span class="profile-avatar" id="profileAvatar">R</span><span><strong id="profileName">Account</strong><small id="profileRole">Member</small></span><button id="dashLogout" aria-label="Log out">⌄</button></div></header>
+    <div id="dashAlert" class="alert hidden"></div>
+    <div id="dashboardContent"></div>
+  </div>
+</section>
+</main>
+
+<div class="sub-overlay" id="subOverlay">
+  <div class="sub-modal">
+    <div class="sub-head">
+      <button class="sub-close" id="subClose">&times;</button>
+      <h3>My Subscription</h3>
+      <p>Your plan and listing usage</p>
+    </div>
+    <div class="sub-body">
+      <span class="sub-badge" id="subBadge"></span>
+      <div class="sub-row"><span>Plan</span><span id="subPlan"></span></div>
+      <div class="sub-row"><span>Monthly price</span><span id="subPrice"></span></div>
+      <div class="sub-row"><span>Trial / renewal</span><span id="subDate"></span></div>
+      <div style="padding-top:12px">
+        <div class="sub-row" style="border:0;padding:0"><span>Houses listed</span><span id="subUsage"></span></div>
+        <div class="sub-bar"><div id="subBarFill"></div></div>
+      </div>
+    </div>
+    <div class="sub-foot">
+      <button class="sub-btn ghost" id="subOk">Close</button>
+      <button class="sub-btn primary" id="subUpgrade">Upgrade / Pay</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast" role="status"></div>
+<div class="modal-backdrop hidden" id="modalBackdrop"><div class="modal"><button class="modal-close" id="modalClose" aria-label="Close">×</button><div id="modalContent"></div></div></div>
+<footer class="site-footer"><a class="brand" href="#" data-view="home"><span class="brand-mark">R</span><span>rent<span class="brand-light">home</span></span></a><span>Made for better renting in Kenya.</span><span>© <span id="year"></span> RentHome</span></footer>
+<script src="app.js"></script>
+</body></html>
