@@ -46,8 +46,8 @@
     <div class="section-heading"><div><div class="eyebrow muted">YOUR NEXT CHAPTER STARTS HERE</div><h2>Homes worth <em>coming home to.</em></h2><p>Browse available rentals and connect with landlords directly.</p></div><span class="listing-count" id="listingCount">Loading homes…</span></div>
     <div class="listing-grid" id="listingGrid"><div class="empty-state">Loading available houses…</div></div>
   </section>
-  <section class="how-section" id="how"><div class="eyebrow muted">MADE TO BE SIMPLE</div><h2>Renting, without the runaround.</h2><div class="how-grid"><article><span class="how-number">01</span><h3>Discover a home</h3><p>Search homes by location and budget, then explore the details.</p></article><article><span class="how-number">02</span><h3>Connect directly</h3><p>Contact the landlord and arrange a viewing before making decisions.</p></article><article><span class="how-number">03</span><h3>Stay organised</h3><p>Once you rent, keep rent records, receipts and maintenance requests together.</p></article></div></section>
-</section>
+    <section class="how-section" id="how"><div class="eyebrow muted">MADE TO BE SIMPLE</div><h2>Renting, without the runaround.</h2><div class="how-grid"><article><span class="how-number">01</span><h3>Discover a home</h3><p>Search homes by location and budget, then explore the details.</p></article><article><span class="how-number">02</span><h3>Connect directly</h3><p>Contact the landlord and arrange a viewing before making decisions.</p></article><article><span class="how-number">03</span><h3>Stay organised</h3><p>Once you rent, keep rent records, receipts and maintenance requests together.</p></article></div></section>
+  </section>
 
 <section id="authView" class="auth-layout hidden">
   <div class="auth-art"><div class="auth-art-content"><span class="brand-mark light-mark">R</span><h2>A little more ease.<br><em>A lot more home.</em></h2><p>One thoughtful place for your property journey.</p></div></div>
@@ -57,7 +57,7 @@
     <form id="authForm">
       <div id="registerFields" class="hidden"><label>Full name<input name="full_name" autocomplete="name" placeholder="Your full name"></label><label>Phone number<input name="phone" autocomplete="tel" placeholder="07XX XXX XXX"></label></div>
       <label>Email address<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
-      <label>Password<input name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></label><a class="forgot-link" href="/forgot.html">Forgot password?</a>
       <div id="roleField" class="hidden"><label>I want to use RentHome as<select name="role"><option value="tenant">Tenant — find and manage a home</option><option value="landlord">Landlord — advertise and manage properties</option></select></label></div>
       <button class="btn btn-primary full-btn" id="authSubmit" type="submit">Log in <span>→</span></button>
     </form><p class="auth-switch" id="authSwitch">New to RentHome? <button id="switchAuth">Create an account</button></p>
@@ -75,6 +75,31 @@
   </div>
 </section>
 </main>
+<div class="sub-overlay" id="subOverlay">
+  <div class="sub-modal">
+    <div class="sub-head">
+      <button class="sub-close" id="subClose">&times;</button>
+      <h3>My Subscription</h3>
+      <p>Your plan and listing usage</p>
+    </div>
+    <div class="sub-body">
+      <span class="sub-badge" id="subBadge"></span>
+      <div class="sub-row"><span>Plan</span><span id="subPlan"></span></div>
+      <div class="sub-row"><span>Monthly price</span><span id="subPrice"></span></div>
+      <div class="sub-row"><span>Trial / renewal</span><span id="subDate"></span></div>
+      <div style="padding-top:12px">
+        <div class="sub-row" style="border:0;padding:0"><span>Houses listed</span><span id="subUsage"></span></div>
+        <div class="sub-bar"><div id="subBarFill"></div></div>
+      </div>
+    </div>
+    <div class="sub-foot">
+      <button class="sub-btn ghost" id="subOk">Close</button>
+      <button class="sub-btn primary" id="subUpgrade">Upgrade / Pay</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="toast" id="toast" role="status"></div>
 <div class="modal-backdrop hidden" id="modalBackdrop"><div class="modal"><button class="modal-close" id="modalClose" aria-label="Close">×</button><div id="modalContent"></div></div></div>
 <footer class="site-footer"><a class="brand" href="#" data-view="home"><span class="brand-mark">R</span><span>rent<span class="brand-light">home</span></span></a><span>Made for better renting in Kenya.</span><span>© <span id="year"></span> RentHome</span></footer>
