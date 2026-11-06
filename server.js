@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const mysql = require('mysql2/promise');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); 
 const helmet = require('helmet');
 const path = require('path');
 const { Connection } = require('mysql2');
