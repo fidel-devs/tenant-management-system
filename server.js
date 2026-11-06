@@ -8,6 +8,8 @@ const path = require('path');
 const { Connection } = require('mysql2');
 
 const app = express();
+app.set('trust proxy', 1);
+app.get('/health', (req, res) => res.send('ok'));
 const PORT = Number(process.env.PORT || 3000);
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
