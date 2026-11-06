@@ -44,6 +44,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(session({
   name: 'renthome.sid',
+  store: new MySQLStore({}, pool),
   secret: process.env.SESSION_SECRET || 'development-only-change-this-secret',
   resave: false,
   saveUninitialized: false,
