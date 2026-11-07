@@ -139,7 +139,7 @@ function panelHeading(title,subtitle='',action=''){return `<div class="panel-hea
 async function renderPanel() {
   if(!currentUser)return;
   $$('.side-link[data-panel]').forEach(b=>b.classList.toggle('active',b.dataset.panel===dashboardPanel));
-  const host=$('#dashboardContent');host.innerHTML='<div class="panel"><div class="empty-state">Loading your account…</div></div>';
+  const host=$('#dashboardContent');host.innerHTML='<div class="panel"><div class="empty-state">Loading…</div></div>';
   try {
     if(currentUser.role==='landlord') await renderLandlord(host);
     else await renderTenant(host);
