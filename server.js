@@ -20,7 +20,8 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'renthome_db',
   waitForConnections: true,
   connectionLimit: 10,
-  decimalNumbers: true
+  decimalNumbers: true,
+  ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined
 });
 
 function cleanImageUrls(list, single) {
