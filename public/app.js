@@ -266,7 +266,17 @@ boot();
     return v;
   }
   const baseApi = window.api;
-  window.api = async function (url, options) { return normalise(await baseApi(url, options)); };
+  const cache = {};
+  window.api = async function (url, options) {
+    const get = !options || !options.method || String(options.method).toUpperCase() === 'GET';
+    if (!get) { for (const k in cache) delete cache[k]; return normalise(await baseApi(url, options)); }
+    const hit = cache[url];
+    if (hit && Date.now() - hit.t < 4000) return hit.p;
+    const p = baseApi(url, options).then(normalise);
+    cache[url] = { t: Date.now(), p };
+    p.catch(() => { delete cache[url]; });
+    return p;
+  };
 
     function attachPreview(form, prop) {
     const input = form.querySelector('[name="image_url"]');
