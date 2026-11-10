@@ -247,6 +247,19 @@ CREATE TABLE IF NOT EXISTS password_resets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS intasend_payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  landlord_id INT NOT NULL,
+  amount INT NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  api_ref VARCHAR(64) NOT NULL UNIQUE,
+  invoice_id VARCHAR(40) NULL UNIQUE,
+  status ENUM('pending','paid','failed') NOT NULL DEFAULT 'pending',
+  note VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (landlord_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 /* The listing ID and the owner of a house can never change, whatever the code does */
 DROP TRIGGER IF EXISTS properties_keep_identity;
 CREATE TRIGGER properties_keep_identity BEFORE UPDATE ON properties
