@@ -340,7 +340,7 @@ app.post('/api/auth/forgot', async (req, res) => {
     const email = String((req.body && req.body.email) || '').trim().toLowerCase();
     if (!email) return res.status(400).json({ error: 'Enter your email.' });
     const [rows] = await pool.execute('SELECT id, full_name FROM users WHERE email = ?', [email]);
-    if (rows.length && mailer) {
+    if (rows.length && process.env.BREVO_API_KEY) {
       const [recent] = await pool.execute(
         'SELECT id FROM password_resets WHERE user_id=? AND created_at > (NOW() - INTERVAL 1 MINUTE)', [rows[0].id]);
       if (!recent.length) {
@@ -351,8 +351,7 @@ app.post('/api/auth/forgot', async (req, res) => {
           'INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (?,?, DATE_ADD(NOW(), INTERVAL 1 HOUR))',
           [rows[0].id, hash]);
         const link = `${process.env.APP_URL || 'http://localhost:3000'}/reset.html?token=${token}`;
-        await mailer.sendMail({
-          from: process.env.MAIL_FROM || process.env.SMTP_USER,
+        await sendMailBrevo({
           to: email,
           subject: 'Reset your RentHome password',
           text: `Hello ${rows[0].full_name},\n\nUse this link to set a new password (valid for 1 hour):\n${link}\n\nIf you did not ask for this, ignore this email.`
@@ -1001,10 +1000,10 @@ const mailer = process.env.SMTP_HOST ? nodemailer.createTransport({
   secure: Number(process.env.SMTP_PORT || 465) === 465,
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
 }) : null;
-console.log('SMTP check:', JSON.stringify(process.env.SMTP_USER), (process.env.SMTP_PASS || '').length);
+
 
 async function sendPlanReminders() {
-  if (!mailer) return;
+  if (!process.env.BREVO_API_KEY) return;
   try {
     const [rows] = await pool.execute(
       `SELECT s.landlord_id, u.full_name, u.email,
@@ -1021,8 +1020,7 @@ async function sendPlanReminders() {
           [r.landlord_id]);
         if (dup.length) continue;
         const when = r.days_left === 0 ? 'today' : r.days_left === 1 ? 'tomorrow' : `in ${r.days_left} days`;
-        await mailer.sendMail({
-          from: process.env.MAIL_FROM || process.env.SMTP_USER,
+        await sendMailBrevo({
           to: r.email,
           subject: `Your RentHome ${r.what} ends ${when}`,
           text: `Hello ${r.full_name},\n\nYour RentHome ${r.what} ends ${when}.\n\n` +
@@ -1197,6 +1195,21 @@ async function checkPendingPayments() {
 }
 setInterval(checkPendingPayments, 15 * 1000);
 
+async function sendMailBrevo({ to, subject, text }) {
+  if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM_EMAIL) throw new Error('Brevo is not configured');
+  const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      sender: { name: process.env.MAIL_FROM_NAME || 'RentHome', email: process.env.MAIL_FROM_EMAIL },
+      to: [{ email: to }],
+      subject,
+      textContent: text
+    })
+  });
+  if (!r.ok) throw new Error(`Brevo ${r.status}: ${await r.text()}`);
+}
+
 const MAX_REMINDERS = 3; // emails per unpaid rent, one per day
 const reminderTransport = require('nodemailer').createTransport({
   host: process.env.SMTP_HOST,
@@ -1253,8 +1266,7 @@ async function sendRentReminders() {
         const amount = 'KSh ' + balance.toLocaleString('en-KE');
         if (r.email) {
           try {
-            await reminderTransport.sendMail({
-              from: process.env.MAIL_FROM || process.env.SMTP_USER,
+            await sendMailBrevo({
               to: r.email,
               subject: 'Rent reminder: payment is overdue',
               text: `Hello ${r.full_name},\n\nYour rent for ${r.property_title}, house ${r.house_number}, was due on ${due} and is ${daysLate} day${daysLate === 1 ? '' : 's'} late.\nAmount owed: ${amount}.\n\nPlease pay as soon as you can by logging in to RentHome. If you have already paid, you can ignore this message.\n\nRentHome`
@@ -1275,7 +1287,7 @@ async function sendRentReminders() {
 setInterval(sendRentReminders, 60 * 60 * 1000); // check hourly; at most one email per tenant per day
 
 const IS_BASE = process.env.INTASEND_BASE_URL || 'https://sandbox.intasend.com';
-const INTASEND_PLAN_AMOUNT = Number(process.env.PLAN_PRICE) || 500; // use your own plan price constant if you have one
+const INTASEND_PLAN_AMOUNT = Math.round(SUB_PRICE); // use your own plan price constant if you have one
 const isHeaders = () => ({ Authorization: `Bearer ${process.env.INTASEND_SECRET_KEY}`, 'Content-Type': 'application/json' });
 
 function validIntasendChallenge(given) {
@@ -1287,9 +1299,14 @@ function validIntasendChallenge(given) {
 
 // >>> PASTE YOUR EXISTING "plan paid" LOGIC HERE (what your Daraja plan callback does on success) <<<
 async function onPlanPaid(landlordId, payment, receiptRef) {
-  // e.g. activate or extend the plan for landlordId for 30 days, then:
-  await notify(landlordId, 'plan_paid', `Your plan payment of KSh ${Number(payment.amount).toLocaleString('en-KE')} was received (${receiptRef}).`, null);
+  await pool.execute(
+    `INSERT INTO subscriptions (landlord_id, paid_until) VALUES (?, DATE_ADD(CURDATE(), INTERVAL 30 DAY))
+     ON DUPLICATE KEY UPDATE paid_until = DATE_ADD(GREATEST(COALESCE(paid_until, CURDATE()), CURDATE()), INTERVAL 30 DAY)`, [landlordId]);
+  await audit(null, 'subscription_paid', `landlord_id=${landlordId}; ref=${receiptRef}`);
+  await notify(landlordId, 'subscription_paid', 'Your monthly plan is active. Thank you!');
 }
+  // e.g. activate or extend the plan for landlordId for 30 days, then:
+
 
 app.post('/api/plan/intasend/stkpush', requireRole('landlord'), async (req, res) => {
   try {
