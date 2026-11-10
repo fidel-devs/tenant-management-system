@@ -749,7 +749,7 @@ function swapGallery(thumb) {
       e.preventDefault();
       const body = Object.fromEntries(new FormData(e.currentTarget).entries());
       try {
-        const r = await api('/api/landlord/subscription/pay', { method: 'POST', body: JSON.stringify(body) });
+        const r = await api('/api/plan/intasend/stkpush', { method: 'POST', body: JSON.stringify(body) });
         closeModal(); showToast(r.message || 'Check your phone for the M-Pesa prompt.');
         let tries = 0;
         const timer = setInterval(async () => {

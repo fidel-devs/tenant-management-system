@@ -1274,5 +1274,106 @@ async function sendRentReminders() {
 }
 setInterval(sendRentReminders, 60 * 60 * 1000); // check hourly; at most one email per tenant per day
 
+const IS_BASE = process.env.INTASEND_BASE_URL || 'https://sandbox.intasend.com';
+const INTASEND_PLAN_AMOUNT = Number(process.env.PLAN_PRICE) || 500; // use your own plan price constant if you have one
+const isHeaders = () => ({ Authorization: `Bearer ${process.env.INTASEND_SECRET_KEY}`, 'Content-Type': 'application/json' });
+
+function validIntasendChallenge(given) {
+  const crypto = require('crypto');
+  const a = Buffer.from(String(given || ''));
+  const b = Buffer.from(String(process.env.INTASEND_WEBHOOK_CHALLENGE || ''));
+  return b.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// >>> PASTE YOUR EXISTING "plan paid" LOGIC HERE (what your Daraja plan callback does on success) <<<
+async function onPlanPaid(landlordId, payment, receiptRef) {
+  // e.g. activate or extend the plan for landlordId for 30 days, then:
+  await notify(landlordId, 'plan_paid', `Your plan payment of KSh ${Number(payment.amount).toLocaleString('en-KE')} was received (${receiptRef}).`, null);
+}
+
+app.post('/api/plan/intasend/stkpush', requireRole('landlord'), async (req, res) => {
+  try {
+    if (!process.env.INTASEND_SECRET_KEY) return res.status(503).json({ error: 'Payments are not configured yet.' });
+    const phone = normalizeKenyanPhone(req.body.phone);
+    if (!phone) return res.status(400).json({ error: 'Enter a valid Kenyan mobile number, for example 0712345678.' });
+    const apiRef = require('crypto').randomUUID();
+    const [ins] = await pool.execute(
+      'INSERT INTO intasend_payments (landlord_id, amount, phone, api_ref) VALUES (?,?,?,?)',
+      [req.session.user.id, INTASEND_PLAN_AMOUNT, phone, apiRef]);
+    const r = await fetch(`${IS_BASE}/api/v1/payment/mpesa-stk-push/`, {
+      method: 'POST', headers: isHeaders(),
+      body: JSON.stringify({ amount: INTASEND_PLAN_AMOUNT, phone_number: phone, api_ref: apiRef })
+    });
+    const d = await r.json();
+    const invoiceId = (d.invoice && d.invoice.invoice_id) || d.invoice_id || null;
+    if (!r.ok || !invoiceId) {
+      console.error('IntaSend STK push failed:', JSON.stringify(d));
+      await pool.execute("UPDATE intasend_payments SET status='failed', note=? WHERE id=?", ['STK push request failed', ins.insertId]);
+      return res.status(502).json({ error: 'Could not start the M-Pesa payment. Please try again.' });
+    }
+    await pool.execute('UPDATE intasend_payments SET invoice_id=? WHERE id=?', [invoiceId, ins.insertId]);
+    await audit(req.session.user.id, 'plan_stk_requested', `intasend_payment_id=${ins.insertId}`);
+    res.json({ message: 'Check your phone and enter your M-Pesa PIN to complete the payment.' });
+  } catch (e) { console.error(e); res.status(502).json({ error: 'Could not start the M-Pesa payment.' }); }
+});
+
+async function settleIntasendPayment(apiRef, invoiceId) {
+  const [rows] = await pool.execute("SELECT * FROM intasend_payments WHERE api_ref=? AND status='pending'", [apiRef]);
+  if (!rows.length) return;
+  const row = rows[0];
+  if (row.invoice_id && row.invoice_id !== invoiceId) return;
+  // never trust the webhook body alone: ask IntaSend directly
+  const r = await fetch(`${IS_BASE}/api/v1/payment/status/`, {
+    method: 'POST', headers: isHeaders(), body: JSON.stringify({ invoice_id: invoiceId })
+  });
+  const d = await r.json();
+  const inv = d.invoice || {};
+  console.log('IntaSend status', invoiceId, inv.state, inv.value); // remove after testing
+  if (!r.ok || inv.invoice_id !== invoiceId) return;
+  if (inv.api_ref && inv.api_ref !== apiRef) return;
+  if (inv.state === 'COMPLETE') {
+    if (!(Number(inv.value) >= Number(row.amount))) {
+      await pool.execute("UPDATE intasend_payments SET status='failed', note='Amount mismatch, check IntaSend dashboard' WHERE id=? AND status='pending'", [row.id]);
+      return;
+    }
+    const [u] = await pool.execute("UPDATE intasend_payments SET status='paid', invoice_id=?, note='Confirmed by IntaSend' WHERE id=? AND status='pending'", [invoiceId, row.id]);
+    if (u.affectedRows) {
+      await audit(null, 'plan_payment_confirmed', `intasend_payment_id=${row.id}; invoice=${invoiceId}`);
+      await onPlanPaid(row.landlord_id, row, invoiceId);
+    }
+  } else if (inv.state === 'FAILED') {
+    await pool.execute("UPDATE intasend_payments SET status='failed', note=? WHERE id=? AND status='pending'",
+      [String(inv.failed_reason || 'Payment failed').slice(0, 255), row.id]);
+  }
+}
+
+app.post('/api/plan/intasend-webhook', async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!validIntasendChallenge(b.challenge)) return res.status(403).json({ error: 'Forbidden' });
+    if (b.invoice_id && b.api_ref) await settleIntasendPayment(String(b.api_ref), String(b.invoice_id));
+    res.json({ ok: true });
+  } catch (e) { console.error('IntaSend webhook error:', e); res.status(500).json({ error: 'Failed' }); }
+});
+
+let checkingIntasend = false;
+async function checkPendingIntasend() {
+  if (checkingIntasend) return;
+  checkingIntasend = true;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT api_ref, invoice_id FROM intasend_payments
+        WHERE status='pending' AND invoice_id IS NOT NULL
+          AND created_at < NOW() - INTERVAL 30 SECOND AND created_at > NOW() - INTERVAL 1 DAY`);
+    for (const p of rows) {
+      try { await settleIntasendPayment(p.api_ref, p.invoice_id); }
+      catch (e) { console.error('IntaSend pending check failed', p.api_ref, e.message); }
+    }
+    await pool.execute("UPDATE intasend_payments SET status='failed', note='No response from IntaSend' WHERE status='pending' AND invoice_id IS NULL AND created_at < NOW() - INTERVAL 15 MINUTE");
+  } catch (e) { console.error('IntaSend pending check error:', e.message); }
+  finally { checkingIntasend = false; }
+}
+setInterval(checkPendingIntasend, 30 * 1000);
+
 app.get('*', (req,res) => res.sendFile(path.join(__dirname,'public','index.html')));
 app.listen(PORT, () => console.log(`RentHome running at http://localhost:${PORT}`));
